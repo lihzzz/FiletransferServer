@@ -13,9 +13,9 @@
 
 using namespace std;
 
-void Receive(string path, Info Filedata){
+void Receive(string path, SOCKET socket){
 	int recvinfo;
-	char* recvBuf = new char[1];
+	char* recvBuflength = new char[128];
 	char* recvInfoBuf;
 	char* sendBuf = new char[10];
 	string currentpath;
@@ -26,13 +26,12 @@ void Receive(string path, Info Filedata){
 	sockaddr_in ClientAddr;
 	int nAddrLen = sizeof(sockaddr_in);
 	while (1){
-		ZeroMemory(recvBuf, sizeof(recvBuf));
-		res = recv(Filedata.sockClient, recvBuf, sizeof(recvBuf), 0);
+		ZeroMemory(recvBuflength, sizeof(recvBuflength));
+		res = recv(socket, recvBuflength, sizeof(recvBuflength), 0);
 		if (res == SOCKET_ERROR || res == 0)
 			continue;
 		else if (res > 0){
-			//cout << recvBuf[0] << endl;
-			recvinfo = recvBuf[0] - '0';
+			
 			switch (recvinfo)
 			{
 			case MSG_FILE:
