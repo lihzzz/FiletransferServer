@@ -12,64 +12,67 @@
 
 
 using namespace std;
-
+int getinfolength(string& src);
+string getinfoname(string& src);
 void Receive(string path, SOCKET socket){
-	int recvinfo;
-	char* recvBuflength = new char[128];
+	char* recvlengthBuf = new char[128];
 	char* recvInfoBuf;
-	char* sendBuf = new char[10];
-	string currentpath;
+	string currentpath, curinfoname, infotmp;
+	char* curinfo;
 	ofstream fout;
 	int res;
-	int a;
-	string str;
-	sockaddr_in ClientAddr;
-	int nAddrLen = sizeof(sockaddr_in);
 	while (1){
-		ZeroMemory(recvBuflength, sizeof(recvBuflength));
-		res = recv(socket, recvBuflength, sizeof(recvBuflength), 0);
+		ZeroMemory(recvlengthBuf, sizeof(recvlengthBuf));
+		res = recv(socket, recvlengthBuf, 128, 0);
 		if (res == SOCKET_ERROR || res == 0)
 			continue;
 		else if (res > 0){
-			
-			switch (recvinfo)
-			{
-			case MSG_FILE:
-				recvInfoBuf = new char[Filedata.Fileinfo.FileLength];
-				while (recv(Filedata.sockClient, recvInfoBuf, Filedata.Fileinfo.FileLength, 0) <= 0){
-				}
-				currentpath = path + "\\" + Filedata.file;
-				fout.open(currentpath, ios::binary | ios::trunc);
-				fout.write(recvInfoBuf, Filedata.Fileinfo.FileLength);
-				delete[] recvInfoBuf;
-				fout.close();
-				str = Filedata.Fileinfo.name;
-				str = "文件" + str + "接收成功,并存储于" + path;
-				cout << str << endl;
-				sendto(Filedata.sockClient, "5", 1, 0, (sockaddr*)&Filedata.ClientAddr, Filedata.nAddrLen);
-				send(Filedata.sockClient, "5", 1, 0);
-				break;
-			case MSG_FILEINFO:
-				recvInfoBuf = new char[sizeof(Filedata.Fileinfo)];
-				a = sizeof(Filedata.Fileinfo);
-				while (recv(Filedata.sockClient, recvInfoBuf, sizeof(Filedata.Fileinfo), 0) <= 0){
-				}
-				memcpy(&Filedata.Fileinfo, recvInfoBuf, sizeof(Filedata.Fileinfo));
-				Filedata.file = Filedata.Fileinfo.name;
-				cout << Filedata.Fileinfo.name << endl;
-				cout << "文件大小：" << Filedata.Fileinfo.FileLength << "字节" << endl;
-
-				delete[]  recvInfoBuf;
-				break;
-			case MSG_OPENFILE_ERROR:
-				break;
-			case MSG_FILEALREADYEXIT_ERROR:
-				break;
-			default:
-				break;
+			int length = stoi(string(recvlengthBuf));
+			recvInfoBuf = new char[length+1];
+			while (recv(socket, recvInfoBuf, length, 0) <= 0){
 			}
+			string information = recvInfoBuf;
+			int filecount = getinfolength(information);
+			cout << endl;
+			for (int i = 0; i < filecount; i++)
+			{
+				curinfoname = getinfoname(information);
+				int curinfolength = getinfolength(information);
+				curinfo = new char[curinfolength];
+				infotmp = information.substr(0, curinfolength);
+				curinfo = (char*)infotmp.c_str();
+				information = information.substr(curinfolength + 1);
+				currentpath = path + "\\" + curinfoname;
+				fout.open(currentpath, ios::binary | ios::trunc);
+				fout.write(curinfo, curinfolength);
+				fout.close();
+				string str = "文件" + curinfoname + "接收成功,并存储于" + path;
+				cout << str << endl;
+			}
+			cout << "接收完毕" << endl;
+			delete[] recvInfoBuf;
 		}
 	}
+}
+
+int getinfolength(string& src){
+	int i = 0;
+	string tmp;
+	while (src[i] != '-'){
+		tmp += src[i++];
+	}
+	src = src.substr(i + 1);
+	return stoi(tmp);
+}
+
+string getinfoname(string& src){
+	int i = 0;
+	string tmp;
+	while (src[i] != '-'){
+		tmp += src[i++];
+	}
+	src = src.substr(i + 1);
+	return tmp;
 }
 int _tmain(int argc, _TCHAR* argv[])
 {
@@ -128,7 +131,7 @@ int _tmain(int argc, _TCHAR* argv[])
 	}
 	cout << "Client  Connect......." << endl;
 
-	Receive(Storage, Filedata);
+	Receive(Storage, Filedata.sockClient);
 	// 关闭同客户端的连接
 	::closesocket(Filedata.sockClient);
 	::closesocket(Filedata.sListen);
