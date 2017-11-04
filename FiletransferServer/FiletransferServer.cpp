@@ -12,8 +12,8 @@
 
 
 using namespace std;
-int getinfolength(string& src);
-string getinfoname(string& src);
+int getinfolength(char* src,int& index);
+string getinfoname(char* src, int& index);
 void Receive(string path, SOCKET socket){
 	char* recvlengthBuf = new char[128];
 	char* recvInfoBuf;
@@ -31,17 +31,16 @@ void Receive(string path, SOCKET socket){
 			recvInfoBuf = new char[length+1];
 			while (recv(socket, recvInfoBuf, length, 0) <= 0){
 			}
-			string information = recvInfoBuf;
-			int filecount = getinfolength(information);
+			int curindex = 0;
+			int filecount = getinfolength(recvInfoBuf + curindex, curindex);
 			cout << endl;
 			for (int i = 0; i < filecount; i++)
 			{
-				curinfoname = getinfoname(information);
-				int curinfolength = getinfolength(information);
+				curinfoname = getinfoname(recvInfoBuf + curindex, curindex);
+				int curinfolength = getinfolength(recvInfoBuf + curindex, curindex);
 				curinfo = new char[curinfolength];
-				infotmp = information.substr(0, curinfolength);
-				curinfo = (char*)infotmp.c_str();
-				information = information.substr(curinfolength + 1);
+				copy(recvInfoBuf + curindex, recvInfoBuf+ curindex + curinfolength, curinfo);
+				curindex += curinfolength + 1;
 				currentpath = path + "\\" + curinfoname;
 				fout.open(currentpath, ios::binary | ios::trunc);
 				fout.write(curinfo, curinfolength);
@@ -55,29 +54,29 @@ void Receive(string path, SOCKET socket){
 	}
 }
 
-int getinfolength(string& src){
-	int i = 0;
+int getinfolength(char* src, int& index){
 	string tmp;
-	while (src[i] != '-'){
-		tmp += src[i++];
+	while (*src != '-'){
+		index++;
+		tmp += *src ++;
 	}
-	src = src.substr(i + 1);
+	index++;
 	return stoi(tmp);
 }
 
-string getinfoname(string& src){
-	int i = 0;
+string getinfoname(char* src, int& index){
 	string tmp;
-	while (src[i] != '-'){
-		tmp += src[i++];
+	while (*src != '-'){
+		index++;
+		tmp += *src ++;
 	}
-	src = src.substr(i + 1);
+	index++;
 	return tmp;
 }
 int _tmain(int argc, _TCHAR* argv[])
 {
 	Info Filedata;
-	string Storage = "E:\\tmp";
+	string Storage = "F:\\tmp";
 	fstream fs;
 	cout << "输入存储的文件夹 格式（c:\\\\a）" << endl;
 	//cin >> Storage;
